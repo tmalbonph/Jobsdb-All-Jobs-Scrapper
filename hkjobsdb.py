@@ -1,10 +1,18 @@
+#!/bin/env python3
+"""
+hkjobsdb.py
+"""
 import json
 import math
 
 import scrapy
 
+# pylint: disable=C0301:line-too-long
+SUPERCHARGE_SRP_LINK = 'https://xapi.supercharge-srp.co/job-search/graphql?country=hk&isSmartSearch=true'
+APPLICATION_JSON_STRING = 'application/json'
 
 class HkJobsDbSpider(scrapy.Spider):
+    """class HkJobsDbSpider"""
     name = 'hkjobsdb'
     total_pages = None
     job_per_page = 30
@@ -16,7 +24,7 @@ class HkJobsDbSpider(scrapy.Spider):
         The site was found using a graphql API. We can see the API request being made in the networks tab of the
         developer tools of any browser.
         """
-        yield scrapy.Request("https://xapi.supercharge-srp.co/job-search/graphql?country=hk&isSmartSearch=true",
+        yield scrapy.Request(SUPERCHARGE_SRP_LINK,
                              method="POST",
                              body=json.dumps({
                                  "query": "query getJobs{jobs(page: 1, locale: \"en\"){total jobs{id "
@@ -25,7 +33,7 @@ class HkJobsDbSpider(scrapy.Spider):
                                           "qualificationName industry{name}workExperienceName}}}",
                              }),
                              headers={
-                                 'content-type': 'application/json',
+                                 'content-type': APPLICATION_JSON_STRING,
                              })
 
     def parse(self, response, **kwargs):
@@ -55,7 +63,7 @@ class HkJobsDbSpider(scrapy.Spider):
             }
             job_id = job.get("id")
             yield scrapy.Request(
-                url="https://xapi.supercharge-srp.co/job-search/graphql?country=hk&isSmartSearch=true",
+                url=SUPERCHARGE_SRP_LINK,
                 callback=self.parse_detail,
                 method="POST",
                 body=json.dumps({
@@ -63,7 +71,7 @@ class HkJobsDbSpider(scrapy.Spider):
                              "{jobDetail {jobRequirement {benefits}}}}" % job_id
                 }),
                 headers={
-                    'content-type': 'application/json',
+                    'content-type': APPLICATION_JSON_STRING,
                 },
                 meta={
                     "item": item
@@ -75,7 +83,7 @@ class HkJobsDbSpider(scrapy.Spider):
             self.total_pages = math.ceil(total_jobs / self.job_per_page)
         if page < self.total_pages:
             page += 1
-            yield scrapy.Request("https://xapi.supercharge-srp.co/job-search/graphql?country=hk&isSmartSearch=true",
+            yield scrapy.Request(SUPERCHARGE_SRP_LINK,
                                  method="POST",
                                  body=json.dumps({
                                      "query": "query getJobs{jobs(page: %s, locale: \"en\"){total jobs{id "
@@ -84,7 +92,7 @@ class HkJobsDbSpider(scrapy.Spider):
                                               "qualificationName industry{name}workExperienceName}}}" % page,
                                  }),
                                  headers={
-                                     'content-type': 'application/json',
+                                     'content-type': APPLICATION_JSON_STRING,
                                  },
                                  meta={
                                      "page": page
